@@ -32,9 +32,9 @@ jobs:
           sed -i '0,/dependencies {/s/dependencies {/dependencies {\n        classpath "com.google.gms:google-services:4.4.0"/' android/build.gradle
           echo "apply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
           
-          # 4. FORCE Gradle to use our Registered SHA-1 Fingerprint
+          # 4. FIX: Download valid debug.keystore from the NEW official path
           mkdir -p ~/.android
-          curl -L -o ~/.android/debug.keystore https://raw.githubusercontent.com/facebook/react-native/main/template/android/app/debug.keystore
+          curl -f -L -o ~/.android/debug.keystore https://raw.githubusercontent.com/facebook/react-native/main/packages/react-native/template/android/app/debug.keystore
           
       - uses: actions/setup-java@v3
         with: 
@@ -49,4 +49,3 @@ jobs:
         with:
           name: Quiz-Pro-App
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          
