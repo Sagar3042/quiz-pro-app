@@ -1,0 +1,6 @@
+{
+  "appId": "com.yourname.quizpro",
+  "appName": "Quiz Pro",
+  "webDir": ".",
+  "bundledWebRuntime": false
+}
