@@ -24,7 +24,9 @@ jobs:
           sed -i '/<\/resources>/i \    <string name="server_client_id">868116455420-tlvb6b74tnq57vu3lorrng8bf41bjmrl.apps.googleusercontent.com</string>' android/app/src/main/res/values/strings.xml
           
       - uses: actions/setup-java@v3
-        with: { distribution: 'zulu', java-version: '17' }
+        with: 
+          distribution: 'zulu'
+          java-version: '21'
         
       - name: Build APK
         working-directory: ./android
