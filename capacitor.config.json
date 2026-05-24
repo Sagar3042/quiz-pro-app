@@ -3,12 +3,8 @@
   "appName": "Quiz Pro",
   "webDir": "www",
   "server": {
-    "hostname": "quiz-110af.firebaseapp.com",
-    "androidScheme": "https",
     "allowNavigation": [
-      "accounts.google.com",
-      "*.firebaseapp.com",
-      "*.googleapis.com"
+      "*"
     ]
   }
 }
