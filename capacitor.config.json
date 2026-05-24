@@ -2,5 +2,13 @@
   "appId": "com.quizpro.app",
   "appName": "Quiz Pro",
   "webDir": "www",
-  "bundledWebRuntime": false
+  "server": {
+    "hostname": "quiz-110af.firebaseapp.com",
+    "androidScheme": "https",
+    "allowNavigation": [
+      "accounts.google.com",
+      "*.firebaseapp.com",
+      "*.googleapis.com"
+    ]
+  }
 }
