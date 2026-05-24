@@ -9,10 +9,10 @@ jobs:
       - uses: actions/setup-node@v3
         with: { node-version: '18' }
         
-      - name: Install Dependencies
+      - name: Install Stable Dependencies (v5)
         run: |
-          npm install -g @capacitor/cli@latest
-          npm install @capacitor/core@latest @capacitor/android@latest @codetrix-studio/capacitor-google-auth@latest --legacy-peer-deps
+          npm install -g @capacitor/cli@5
+          npm install @capacitor/core@5 @capacitor/android@5 @codetrix-studio/capacitor-google-auth@3.3.4
           
       - name: Build Fresh Capacitor Android
         run: |
@@ -20,15 +20,14 @@ jobs:
           npx cap add android
           npx cap sync android
           
-      - name: Setup Google Auth & Upgrade Gradle
+      - name: Setup Google Auth
         run: |
           sed -i '/<\/resources>/i \    <string name="server_client_id">868116455420-tlvb6b74tnq57vu3lorrng8bf41bjmrl.apps.googleusercontent.com</string>' android/app/src/main/res/values/strings.xml
-          sed -i 's/gradle-[0-9\.]*-all.zip/gradle-8.7-all.zip/g' android/gradle/wrapper/gradle-wrapper.properties
           
       - uses: actions/setup-java@v3
         with: 
           distribution: 'zulu'
-          java-version: '21'
+          java-version: '17'
         
       - name: Build APK
         working-directory: ./android
@@ -38,3 +37,4 @@ jobs:
         with:
           name: Quiz-Pro-App
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          
