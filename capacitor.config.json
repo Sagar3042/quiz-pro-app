@@ -2,9 +2,11 @@
   "appId": "com.quizpro.app",
   "appName": "Quiz Pro",
   "webDir": "www",
-  "server": {
-    "allowNavigation": [
-      "*"
-    ]
+  "plugins": {
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "serverClientId": "868116455420-tlvb6b74tnq57vu3lorrng8bf41bjmrl.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    }
   }
 }
