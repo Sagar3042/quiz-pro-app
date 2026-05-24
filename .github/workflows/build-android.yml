@@ -11,9 +11,8 @@ jobs:
         
       - name: Install Dependencies
         run: |
-          npm init -y
-          npm install -g @capacitor/cli
-          npm install @capacitor/core @capacitor/android @codetrix-studio/capacitor-google-auth
+          npm install -g @capacitor/cli@latest
+          npm install @capacitor/core@latest @capacitor/android@latest @codetrix-studio/capacitor-google-auth@latest --legacy-peer-deps
           
       - name: Build Capacitor Android
         run: |
