@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Study Quiz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Anti-zoom & Base Styles */
+    html, body {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: none;
+      background-color: #fdfaf6;
+      background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+      font-family: 'Kalam', 'Comic Sans MS', cursive, sans-serif;
+      color: #1e293b;
+      margin: 0; padding: 0; min-height: 100vh;
+    }
+
+    /* Sketch UI Elements */
+    .sketch-box {
+      background-color: #ffffff;
+      border: 3px solid #334155;
+      border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+      box-shadow: 4px 5px 0px rgba(51, 65, 85, 0.15);
+      position: relative;
+    }
+
+    .sketch-btn {
+      background-color: #ffffff;
+      border: 3px solid #334155;
+      border-radius: 15px 225px 15px 255px/255px 15px 225px 15px;
+      box-shadow: 2px 3px 0px rgba(51, 65, 85, 0.2);
+      transition: all 0.1s ease;
+      cursor: pointer; user-select: none;
+    }
+    .sketch-btn:active:not(:disabled) { transform: translate(2px, 3px); box-shadow: 0px 0px 0px rgba(51, 65, 85, 0.2); }
+    .sketch-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    /* Pencil Colors */
+    .pencil-green { background: repeating-linear-gradient(45deg, rgba(34,197,94,0.1), rgba(34,197,94,0.1) 4px, rgba(34,197,94,0.2) 4px, rgba(34,197,94,0.2) 8px), #f0fdf4 !important; border-color: #166534 !important; color: #14532d !important; }
+    .pencil-red { background: repeating-linear-gradient(-45deg, rgba(239,68,68,0.1), rgba(239,68,68,0.1) 4px, rgba(239,68,68,0.2) 4px, rgba(239,68,68,0.2) 8px), #fef2f2 !important; border-color: #991b1b !important; color: #7f1d1d !important; }
+    .pencil-blue { background: repeating-linear-gradient(45deg, rgba(59,130,246,0.1), rgba(59,130,246,0.1) 4px, rgba(59,130,246,0.2) 4px, rgba(59,130,246,0.2) 8px), #eff6ff !important; border-color: #1e40af !important; color: #1e3a8a !important; }
+    .pencil-yellow { background: repeating-linear-gradient(45deg, rgba(234,179,8,0.15), rgba(234,179,8,0.15) 4px, rgba(234,179,8,0.25) 4px, rgba(234,179,8,0.25) 8px), #fefce8 !important; border-color: #a16207 !important; color: #422006 !important; }
+    
+    .hidden { display: none !important; }
+    .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background-color: #94a3b8; border-radius: 10px; }
+    
+    @keyframes drawIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-draw { animation: drawIn 0.3s ease-out forwards; }
+  </style>
+</head>
+<body class="flex flex-col items-center p-4 md:p-8 pt-24">
+
+  <!-- Navbar -->
+  <div id="navbar" class="hidden fixed top-0 left-0 w-full p-4 bg-[#fdfaf6]/95 backdrop-blur-sm border-b-[3px] border-slate-800 flex justify-between items-center z-50">
+    <div class="flex items-center gap-3">
+      <img src="ok/op.jpg" class="w-10 h-10 rounded-full border-[3px] border-slate-800 object-cover bg-white pointer-events-none select-none" draggable="false" oncontextmenu="return false;" onerror="this.src='https://api.dicebear.com/7.x/shapes/svg?seed=logo'">
+      <img id="nav-avatar" src="" class="w-10 h-10 rounded-full border-[3px] border-slate-800 object-cover bg-white hidden md:block pointer-events-none select-none" draggable="false" oncontextmenu="return false;">
+      <span id="nav-username" class="font-bold text-lg hidden md:block"></span>
+    </div>
+    <div class="flex gap-2">
+      <button id="nav-btn-leaderboard" class="sketch-btn pencil-blue px-3 py-2 flex items-center gap-1 font-bold" title="Leaderboard"><i class="ph ph-trophy text-xl text-yellow-600"></i> <span class="hidden md:inline">Rank</span></button>
+      <button id="nav-btn-history" class="sketch-btn pencil-yellow px-3 py-2 flex items-center gap-1 font-bold" title="History"><i class="ph ph-clock-counter-clockwise text-xl"></i> <span class="hidden md:inline">History</span></button>
+      <button id="nav-btn-logout" class="sketch-btn pencil-red px-3 py-2" title="Logout"><i class="ph ph-sign-out text-xl"></i></button>
+    </div>
+  </div>
+
+  <div id="app-container" class="w-full max-w-2xl flex flex-col items-center relative">
+    
+    <!-- Screen: Loading -->
+    <div id="screen-loading" class="flex flex-col items-center justify-center space-y-4 animate-draw w-full pt-20">
+      <i class="ph ph-spinner-gap text-6xl text-slate-800 animate-spin font-bold"></i>
+      <h2 class="text-2xl font-bold">Loading App...</h2>
+    </div>
+
+    <!-- Screen: Login -->
+    <div id="screen-login" class="hidden flex-col items-center gap-6 animate-draw w-full max-w-sm pt-10">
+      <div class="sketch-box p-8 flex flex-col items-center w-full">
+        <img src="ok/op.jpg" class="w-28 h-28 rounded-full border-4 border-slate-800 object-cover mb-4 pointer-events-none select-none" draggable="false" oncontextmenu="return false;" onerror="this.src='https://api.dicebear.com/7.x/shapes/svg?seed=logo'">
+        <h1 class="text-4xl font-bold text-slate-800 mb-8">Hey Welcome!</h1>
+        <button id="btn-google-login" class="w-full sketch-btn pencil-blue p-4 text-xl font-bold flex justify-center items-center gap-3">
+          <i class="ph ph-google-logo text-3xl"></i> Login with Google
+        </button>
+      </div>
+    </div>
+
+    <!-- Screen: Profile Setup -->
+    <div id="screen-profile" class="hidden flex-col items-center gap-6 animate-draw w-full max-w-sm pt-8">
+      <div class="sketch-box p-8 flex flex-col items-center w-full">
+        <h2 class="text-3xl font-bold mb-6">Setup Your Profile</h2>
+        <div class="relative mb-6">
+          <img id="profile-preview" src="https://api.dicebear.com/7.x/notionists/svg?seed=Felix" class="w-32 h-32 rounded-full border-[4px] border-slate-800 object-cover sketch-box p-1 pointer-events-none select-none" draggable="false" oncontextmenu="return false;">
+          <button id="btn-select-photo" class="absolute bottom-0 right-0 sketch-btn pencil-yellow p-3 rounded-full">
+            <i class="ph ph-camera text-xl font-bold"></i>
+          </button>
+          <input type="file" id="profile-photo-input" accept="image/*" class="hidden">
+        </div>
+        <input type="text" id="input-username" placeholder="Enter Your Name..." class="w-full sketch-box p-4 font-bold text-lg mb-6 outline-none">
+        <p id="profile-error" class="hidden text-red-600 font-bold mb-4"></p>
+        <button id="btn-save-profile" class="w-full sketch-btn pencil-green p-4 text-xl font-bold flex justify-center items-center gap-2">
+          Save Profile <i class="ph ph-check-circle text-2xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Screen: Dashboard / Upload -->
+    <div id="screen-dashboard" class="hidden flex-col gap-6 animate-draw w-full">
+      
+      <!-- Profile Welcome Area -->
+      <div class="flex flex-col items-center mb-2 mt-4">
+        <img id="dashboard-avatar" src="" class="w-24 h-24 rounded-full border-4 border-slate-800 object-cover bg-white mb-3 shadow-sm pointer-events-none select-none" draggable="false" oncontextmenu="return false;">
+        <h2 class="text-3xl font-bold text-slate-800 text-center">Welcome, <span id="dashboard-username"></span>!</h2>
+      </div>
+
+      <!-- Upload Box -->
+      <div class="sketch-box p-6 flex flex-col items-center w-full">
+        <div class="pencil-yellow border-[3px] border-slate-800 rounded-full p-3 mb-4 rotate-[-5deg]">
+          <i class="ph ph-folder text-4xl text-slate-800 font-bold"></i>
+        </div>
+        <h2 class="text-3xl font-bold mb-2">New Quiz</h2>
+        <p class="text-slate-600 font-bold text-center mb-6">Upload the JSON generated from Gemini here.</p>
+        <input type="file" id="json-upload-input" accept=".json,application/json" class="hidden" />
+        <button id="btn-json-upload" class="w-full sketch-btn pencil-blue font-bold py-4 text-2xl flex items-center justify-center gap-3">
+          <i class="ph ph-file-json text-3xl"></i> Upload JSON
+        </button>
+      </div>
+
+      <!-- Prompt Guide -->
+      <div class="sketch-box p-6 w-full text-left">
+        <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span class="pencil-yellow border-2 border-slate-800 py-1 px-3 rounded-lg text-lg">Step 1</span> Gemini Prompt
+        </h3>
+        <p class="text-slate-700 font-bold mb-4">Upload your image to Google Gemini and paste this prompt:</p>
+        <div class="relative group">
+          <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-4 pr-14 font-mono text-sm text-slate-700 h-40 overflow-y-auto custom-scroll">
+            <pre id="prompt-text" class="whitespace-pre-wrap font-sans font-bold">Analyze the uploaded image thoroughly.
+1. Identify the primary language of the text. Generate ALL questions, options, and explanations in this language.
+2. Extract EVERY SINGLE PIECE of information to create questions. Do NOT skip any content. If there are 100 possible questions, generate all 100.
+3. CRITICAL RULE: DO NOT REPEAT ANY QUESTION.
+4. Create ONE single JSON object containing exactly TWO arrays: "easy_mode" and "hard_mode".
+5. "easy_mode": 3 wrong options are VERY OBVIOUSLY wrong.
+6. "hard_mode": 3 wrong options are VERY SIMILAR to the correct answer.
+7. EXACT Format:
+{
+  "easy_mode": [{"question": "...", "options": ["A", "B", "C", "D"], "correct_answer": "A", "explanation": "..."}],
+  "hard_mode": [...]
+}</pre>
+          </div>
+          <button id="btn-copy-prompt" class="absolute top-2 right-2 sketch-btn bg-white p-2">
+            <i class="ph ph-copy text-2xl text-slate-700"></i>
+          </button>
+        </div>
+        <a href="https://gemini.google.com/" target="_blank" class="mt-4 inline-block sketch-btn bg-slate-100 px-4 py-2 font-bold text-blue-700 flex items-center gap-2 w-max">
+          <i class="ph ph-arrow-square-out text-xl"></i> Open Google Gemini
+        </a>
+      </div>
+    </div>
+
+    <!-- Screen: Leaderboard -->
+    <div id="screen-leaderboard" class="hidden flex-col animate-draw w-full">
+      <div class="sketch-box p-6 w-full">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-3xl font-bold flex items-center gap-2"><i class="ph ph-trophy text-yellow-500"></i> Leaderboard</h2>
+          <button class="btn-close-screen sketch-btn bg-slate-100 p-2"><i class="ph ph-x text-2xl font-bold"></i></button>
+        </div>
+        <p class="text-slate-600 font-bold mb-6 text-center">Earn XP by playing quizzes!</p>
+        <div id="leaderboard-list" class="flex flex-col gap-3 max-h-[60vh] overflow-y-auto custom-scroll pr-2"></div>
+      </div>
+    </div>
+
+    <!-- Screen: History -->
+    <div id="screen-history" class="hidden flex-col animate-draw w-full">
+      <div class="sketch-box p-6 w-full">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-3xl font-bold flex items-center gap-2"><i class="ph ph-clock-counter-clockwise"></i> History</h2>
+          <button class="btn-close-screen sketch-btn bg-slate-100 p-2"><i class="ph ph-x text-2xl font-bold"></i></button>
+        </div>
+        <p class="text-slate-600 font-bold mb-4">Your saved quizzes:</p>
+        <div id="history-list" class="flex flex-col gap-3 max-h-[60vh] overflow-y-auto custom-scroll pr-2"></div>
+      </div>
+    </div>
+
+    <!-- Screen: Mode Select -->
+    <div id="screen-mode-select" class="hidden flex-col items-center gap-6 animate-draw w-full max-w-sm pt-8">
+      <div class="sketch-box p-8 flex flex-col items-center w-full">
+        <i class="ph ph-sliders text-5xl text-slate-800 font-bold mb-4"></i>
+        <h2 class="text-3xl font-bold mb-8 text-center">Select Quiz Mode</h2>
+        <button id="btn-easy-mode" class="w-full sketch-btn pencil-green text-3xl py-4 px-6 flex justify-between items-center font-bold mb-4">
+          Easy Mode <i class="ph ph-caret-right"></i>
+        </button>
+        <button id="btn-hard-mode" class="w-full sketch-btn pencil-red text-3xl py-4 px-6 flex justify-between items-center font-bold mb-8">
+          Hard Mode <i class="ph ph-caret-right"></i>
+        </button>
+        <button class="btn-close-screen text-slate-500 font-bold underline decoration-wavy">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Screen: Quiz -->
+    <div id="screen-quiz" class="hidden flex-col animate-draw w-full">
+      <div class="sketch-box p-4 mb-4 flex justify-between items-center">
+        <div class="font-bold text-2xl">Q. <span id="quiz-current-q">1</span>/<span id="quiz-total-q">10</span></div>
+        <div class="font-bold text-2xl flex items-center gap-2">
+          <i id="timer-icon" class="ph ph-clock text-blue-600"></i> <span id="quiz-timer">15s</span>
+        </div>
+      </div>
+
+      <div class="w-full border-4 border-slate-800 bg-white h-4 rounded-full mb-6 overflow-hidden relative shadow-inner">
+        <div id="timer-bar" class="absolute top-0 left-0 h-full transition-[width] duration-1000 ease-linear border-r-2 border-slate-800 pencil-blue" style="width: 100%;"></div>
+      </div>
+
+      <div class="sketch-box p-6 md:p-8">
+        <h2 id="quiz-question-text" class="text-2xl md:text-3xl font-bold mb-6 leading-tight">Question?</h2>
+        <div id="options-container" class="flex flex-col gap-4"></div>
+        <div id="explanation-section" class="hidden mt-6 animate-draw">
+          <div class="pencil-red border-4 border-red-800 rounded-2xl p-4">
+            <p class="text-xl font-bold"><span class="underline decoration-wavy mr-2">Explanation:</span> <span id="explanation-text"></span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen: Result -->
+    <div id="screen-result" class="hidden flex-col animate-draw w-full space-y-8 pb-10">
+      <div class="sketch-box p-8 text-center relative mt-8">
+        <div class="absolute -top-10 left-1/2 -translate-x-1/2 pencil-yellow border-[4px] border-slate-800 w-24 h-24 rounded-full flex items-center justify-center rotate-6 shadow-md">
+          <i class="ph ph-medal text-5xl font-bold"></i>
+        </div>
+        <h2 class="text-4xl font-bold mt-10 mb-2">Score Board</h2>
+        <p id="xp-msg" class="text-xl text-green-700 font-bold mb-4">+0 XP Earned!</p>
+        <div class="text-6xl font-bold mb-8">
+          <span id="result-score" class="underline decoration-wavy decoration-blue-500">0</span> <span class="text-3xl text-slate-500">/ <span id="result-total">10</span></span>
+        </div>
+        <div class="flex gap-4">
+          <button id="btn-play-again" class="flex-1 sketch-btn pencil-blue text-xl py-3 font-bold flex justify-center items-center gap-2"><i class="ph ph-arrow-counter-clockwise"></i> Play Again</button>
+          <button class="btn-close-screen flex-1 sketch-btn bg-slate-100 text-xl py-3 font-bold flex justify-center items-center gap-2"><i class="ph ph-house"></i> Home</button>
+        </div>
+      </div>
+      <div class="sketch-box p-6">
+        <h3 class="text-3xl font-bold text-center mb-6 underline decoration-wavy decoration-yellow-400">Review</h3>
+        <div id="review-container" class="space-y-6"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, addDoc, collection, getDocs, query, orderBy, limit, serverTimestamp, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    // Firebase Init
+    const app = initializeApp({
+      apiKey: "AIzaSyBmPdi_sPjVHIkdwcCdp9etcWkFuXy0UAs",
+      authDomain: "quiz-110af.firebaseapp.com",
+      projectId: "quiz-110af",
+      storageBucket: "quiz-110af.firebasestorage.app",
+      messagingSenderId: "868116455420",
+      appId: "1:868116455420:web:a25298cb8c7d0b61af5c79",
+      measurementId: "G-V4QM0TQJFK"
+    });
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    // ImageKit Credentials
+    const IMAGEKIT_PUBLIC_KEY = "public_hGSGrmAJH4A5uBGHBS3LKieZkd4=";
+    const IMAGEKIT_PRIVATE_KEY = "private_/hp99zDJ6b8gRHbjKmT3k4ouuvs=";
+
+    // App State
+    let currentUser = null;
+    let profilePhotoFile = null;
+    let uploadedQuizData = null;
+    let currentQuizName = "";
+    
+    // Quiz State
+    let questions = [];
+    let currentQIndex = 0;
+    let score = 0;
+    let timeLeft = 15;
+    let timerInterval = null;
+    let isAnswered = false;
+    let userAnswers = [];
+    let quizStartTime = 0;
+
+    // Navigation
+    const screens = ['screen-loading', 'screen-login', 'screen-profile', 'screen-dashboard', 'screen-leaderboard', 'screen-history', 'screen-mode-select', 'screen-quiz', 'screen-result'];
+    const showScreen = (id) => {
+      screens.forEach(s => {
+          const el = document.getElementById(s);
+          if (el) el.classList.add('hidden');
+      });
+      const targetEl = document.getElementById(id);
+      if (targetEl) targetEl.classList.remove('hidden');
+    };
+    
+    // Wire up close buttons
+    document.querySelectorAll('.btn-close-screen').forEach(btn => {
+      btn.addEventListener('click', () => showScreen('screen-dashboard'));
+    });
+
+    // ImageKit Upload Function
+    const uploadToImageKit = async (file, fileName) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("fileName", fileName);
+      formData.append("publicKey", IMAGEKIT_PUBLIC_KEY);
+      
+      const authHeader = "Basic " + btoa(IMAGEKIT_PRIVATE_KEY + ":");
+      
+      const res = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+        method: "POST",
+        headers: { "Authorization": authHeader },
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "ImageKit upload failed");
+      return data.url;
+    };
+
+    // Authentication Listener
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        currentUser = null;
+        document.getElementById('navbar').classList.add('hidden');
+        showScreen('screen-login');
+      } else {
+        currentUser = user;
+        const snap = await getDoc(doc(db, "users", user.uid));
+        if (snap.exists()) {
+          const data = snap.data();
+          // Navbar updates
+          document.getElementById('nav-avatar').src = data.photoUrl;
+          document.getElementById('nav-username').textContent = data.username;
+          // Dashboard updates
+          document.getElementById('dashboard-avatar').src = data.photoUrl;
+          document.getElementById('dashboard-username').textContent = data.username;
+          
+          document.getElementById('navbar').classList.remove('hidden');
+          showScreen('screen-dashboard');
+        } else {
+          document.getElementById('navbar').classList.add('hidden');
+          showScreen('screen-profile');
+        }
+      }
+    });
+
+    // Login & Logout
+    document.getElementById('btn-google-login').onclick = () => signInWithPopup(auth, provider).catch(e => alert("Login Error: " + e.message));
+    document.getElementById('nav-btn-logout').onclick = () => signOut(auth);
+
+    // Profile Setup
+    document.getElementById('btn-select-photo').onclick = () => document.getElementById('profile-photo-input').click();
+    document.getElementById('profile-photo-input').onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        profilePhotoFile = file;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          document.getElementById('profile-preview').src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    
+    document.getElementById('btn-save-profile').onclick = async () => {
+      const name = document.getElementById('input-username').value.trim();
+      const err = document.getElementById('profile-error');
+      if(!name) { err.textContent = "Name is required!"; err.classList.remove('hidden'); return; }
+      
+      const btn = document.getElementById('btn-save-profile');
+      btn.innerHTML = `<i class="ph ph-spinner-gap animate-spin text-2xl"></i> Saving...`;
+      btn.disabled = true;
+
+      try {
+        let photoUrl = document.getElementById('profile-preview').src;
+        if (profilePhotoFile) {
+           photoUrl = await uploadToImageKit(profilePhotoFile, `profile_${currentUser.uid}`);
+        }
+        await setDoc(doc(db, "users", currentUser.uid), { username: name, photoUrl: photoUrl, xp: 0 });
+        location.reload();
+      } catch(e) {
+        err.textContent = e.message; err.classList.remove('hidden');
+        btn.disabled = false; btn.innerHTML = "Save Profile";
+      }
+    };
+
+    // Prompt Copy
+    document.getElementById('btn-copy-prompt').onclick = () => {
+      const text = document.getElementById('prompt-text').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('btn-copy-prompt');
+        btn.innerHTML = `<i class="ph ph-check text-green-600 text-2xl font-bold"></i>`;
+        setTimeout(() => btn.innerHTML = `<i class="ph ph-copy text-slate-700 text-2xl"></i>`, 2000);
+      });
+    };
+
+    // Upload JSON & History Save
+    document.getElementById('btn-json-upload').onclick = () => document.getElementById('json-upload-input').click();
+    document.getElementById('json-upload-input').onchange = (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (data.easy_mode || data.hard_mode) {
+            let qName = prompt("Enter a name to save this quiz in History:");
+            if(!qName) qName = "Quiz - " + new Date().toLocaleDateString();
+            
+            showScreen('screen-loading');
+            
+            await addDoc(collection(db, "users", currentUser.uid, "history"), {
+              title: qName,
+              data: JSON.stringify(data), 
+              timestamp: serverTimestamp()
+            });
+
+            uploadedQuizData = data;
+            currentQuizName = qName;
+            showScreen('screen-mode-select');
+          } else { alert("Invalid JSON format."); }
+        } catch(err) { alert("JSON parsing error!"); showScreen('screen-dashboard'); }
+      };
+      reader.readAsText(file);
+      e.target.value = null; // reset
+    };
+
+    // Leaderboard
+    document.getElementById('nav-btn-leaderboard').onclick = async () => {
+      showScreen('screen-loading');
+      const listEl = document.getElementById('leaderboard-list');
+      listEl.innerHTML = '';
+      try {
+        const qSnap = await getDocs(query(collection(db, "users"), orderBy("xp", "desc"), limit(50)));
+        let rank = 1;
+        qSnap.forEach(d => {
+          const data = d.data();
+          const isMe = d.id === currentUser.uid;
+          const bg = isMe ? 'pencil-yellow border-[3px]' : 'bg-slate-50 border-2';
+          let rIcon = `<span class="font-bold text-slate-500 w-8 text-center">#${rank}</span>`;
+          if(rank === 1) rIcon = `<i class="ph ph-medal text-3xl text-yellow-500 w-8 text-center drop-shadow-sm"></i>`;
+          else if(rank === 2) rIcon = `<i class="ph ph-medal text-3xl text-slate-400 w-8 text-center drop-shadow-sm"></i>`;
+          else if(rank === 3) rIcon = `<i class="ph ph-medal text-3xl text-orange-600 w-8 text-center drop-shadow-sm"></i>`;
+          
+          listEl.innerHTML += `
+            <div class="flex items-center gap-3 p-3 sketch-box shadow-sm mb-3 ${bg}">
+              ${rIcon}
+              <img src="${data.photoUrl}" draggable="false" oncontextmenu="return false;" class="w-12 h-12 rounded-full border-2 border-slate-800 object-cover bg-white pointer-events-none select-none">
+              <span class="flex-1 font-bold text-lg truncate">${data.username} ${isMe ? '(You)' : ''}</span>
+              <span class="font-bold text-blue-800 bg-blue-100 px-3 py-1 rounded-xl border border-blue-300">${data.xp} XP</span>
+            </div>`;
+          rank++;
+        });
+        showScreen('screen-leaderboard');
+      } catch(e) { alert("Error loading leaderboard."); showScreen('screen-dashboard'); }
+    };
+
+    // History
+    document.getElementById('nav-btn-history').onclick = async () => {
+      showScreen('screen-loading');
+      const listEl = document.getElementById('history-list');
+      listEl.innerHTML = '';
+      try {
+        const qSnap = await getDocs(query(collection(db, "users", currentUser.uid, "history"), orderBy("timestamp", "desc")));
+        if(qSnap.empty) {
+            listEl.innerHTML = "<p class='text-center font-bold text-slate-500'>No history found.</p>";
+        } else {
+            qSnap.forEach(d => {
+                const docData = d.data();
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 sketch-btn pencil-blue font-bold flex justify-between items-center mb-3";
+                btn.innerHTML = `<span class="truncate pr-2 text-lg">${docData.title}</span> <i class="ph ph-play-circle text-3xl"></i>`;
+                btn.onclick = () => {
+                    uploadedQuizData = JSON.parse(docData.data);
+                    currentQuizName = docData.title;
+                    showScreen('screen-mode-select');
+                };
+                listEl.appendChild(btn);
+            });
+        }
+        showScreen('screen-history');
+      } catch(e) { alert("Error loading history."); showScreen('screen-dashboard'); }
+    };
+
+    // Quiz Logic
+    const shuffleArray = (arr) => [...arr].sort(() => Math.random() - 0.5);
+
+    const initQuiz = (mode) => {
+      let srcQ = mode === 'easy' ? uploadedQuizData.easy_mode : uploadedQuizData.hard_mode;
+      if(!srcQ || srcQ.length === 0) { alert("No questions found for this mode."); return; }
+
+      questions = srcQ.map(q => {
+        let opts = [...q.options];
+        if(!opts.includes(q.correct_answer)) opts[0] = q.correct_answer;
+        return { ...q, shuffledOptions: shuffleArray(opts) };
+      });
+      questions = shuffleArray(questions);
+      
+      currentQIndex = 0; score = 0; userAnswers = [];
+      quizStartTime = Date.now();
+      showScreen('screen-quiz');
+      loadQuestion();
+    };
+
+    document.getElementById('btn-easy-mode').onclick = () => initQuiz('easy');
+    document.getElementById('btn-hard-mode').onclick = () => initQuiz('hard');
+
+    const loadQuestion = () => {
+      isAnswered = false;
+      timeLeft = 15;
+      document.getElementById('explanation-section').classList.add('hidden');
+      
+      const q = questions[currentQIndex];
+      document.getElementById('quiz-current-q').textContent = currentQIndex + 1;
+      document.getElementById('quiz-total-q').textContent = questions.length;
+      document.getElementById('quiz-question-text').textContent = q.question;
+      
+      const cont = document.getElementById('options-container');
+      cont.innerHTML = '';
+      q.shuffledOptions.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-5 text-xl md:text-2xl font-bold flex justify-between items-center sketch-btn hover:bg-slate-50";
+        btn.innerHTML = `<span>${opt}</span>`;
+        btn.onclick = () => handleAnswer(opt, btn);
+        cont.appendChild(btn);
+      });
+      
+      startTimer();
+    };
+
+    const startTimer = () => {
+      clearInterval(timerInterval);
+      updateTimerUI();
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerUI();
+        if(timeLeft <= 0) {
+          clearInterval(timerInterval);
+          handleAnswer('TIMEOUT', null);
+        }
+      }, 1000);
+    };
+
+    const updateTimerUI = () => {
+      document.getElementById('quiz-timer').textContent = `${timeLeft}s`;
+      const bar = document.getElementById('timer-bar');
+      const icon = document.getElementById('timer-icon');
+      const txt = document.getElementById('quiz-timer');
+      bar.style.width = `${(timeLeft/15)*100}%`;
+      
+      if(timeLeft <= 5) {
+        bar.className = "absolute top-0 left-0 h-full transition-[width] duration-1000 ease-linear border-r-[3px] border-slate-800 pencil-red";
+        icon.className = "ph ph-clock text-red-600 font-bold";
+        txt.className = "text-red-600";
+      } else {
+        bar.className = "absolute top-0 left-0 h-full transition-[width] duration-1000 ease-linear border-r-[3px] border-slate-800 pencil-blue";
+        icon.className = "ph ph-clock text-blue-600 font-bold";
+        txt.className = "text-slate-800";
+      }
+    };
+
+    const handleAnswer = (selected, btnEl) => {
+      if(isAnswered) return;
+      isAnswered = true;
+      clearInterval(timerInterval);
+
+      const q = questions[currentQIndex];
+      const isCorrect = (selected === q.correct_answer);
+      if(isCorrect) score++;
+
+      userAnswers.push({ q: q.question, selected: selected, correct: q.correct_answer, exp: q.explanation, isCorrect });
+
+      // Highlight options
+      const buttons = document.getElementById('options-container').children;
+      Array.from(buttons).forEach(b => {
+        b.disabled = true;
+        const text = b.querySelector('span').textContent;
+        if(text === q.correct_answer) {
+          b.className = "w-full text-left p-5 text-xl md:text-2xl font-bold flex justify-between items-center sketch-box pencil-green border-[4px] shadow-md z-10 scale-[1.02]";
+          b.innerHTML += '<i class="ph ph-check-circle text-green-800 text-3xl shrink-0"></i>';
+        } else if (text === selected) {
+          b.className = "w-full text-left p-5 text-xl md:text-2xl font-bold flex justify-between items-center sketch-box pencil-red shadow-inner";
+          b.innerHTML += '<i class="ph ph-x-circle text-red-800 text-3xl shrink-0"></i>';
+        } else {
+          b.className = "w-full text-left p-5 text-xl md:text-2xl font-bold flex justify-between items-center sketch-box bg-slate-100 text-slate-400 opacity-60";
+        }
+      });
+
+      // Auto Advance Logic
+      if(isCorrect) {
+        setTimeout(nextQuestion, 500); 
+      } else {
+        if(navigator.vibrate) navigator.vibrate([100,50,100]);
+        document.getElementById('explanation-text').textContent = q.explanation;
+        document.getElementById('explanation-section').classList.remove('hidden');
+        setTimeout(nextQuestion, 3000); 
+      }
+    };
+
+    const nextQuestion = () => {
+      currentQIndex++;
+      if(currentQIndex < questions.length) loadQuestion();
+      else showResult();
+    };
+
+    const showResult = async () => {
+      const timeSpentSecs = Math.floor((Date.now() - quizStartTime) / 1000);
+      const xpEarned = timeSpentSecs; 
+      
+      document.getElementById('result-score').textContent = score;
+      document.getElementById('result-total').textContent = questions.length;
+      document.getElementById('xp-msg').textContent = `+${xpEarned} XP Earned!`;
+
+      try {
+        await updateDoc(doc(db, "users", currentUser.uid), { xp: increment(xpEarned) });
+      } catch(e) { console.error("XP update failed", e); }
+
+      const reviewCont = document.getElementById('review-container');
+      reviewCont.innerHTML = userAnswers.map(ans => `
+        <div class="border-[3px] rounded-3xl p-6 ${ans.isCorrect ? 'pencil-green border-green-800' : 'pencil-red border-red-800'}">
+          <div class="flex gap-4">
+            ${ans.isCorrect ? '<i class="ph ph-check-circle text-green-800 text-3xl mt-1"></i>' : '<i class="ph ph-x-circle text-red-800 text-3xl mt-1"></i>'}
+            <div class="flex-1">
+              <span class="font-bold text-xl">${ans.q}</span>
+              ${!ans.isCorrect ? `
+                <div class="mt-3 font-bold">
+                  <div class="text-slate-600">Your Answer: <span class="line-through text-red-700 ml-2 bg-white/50 px-2 rounded">${ans.selected === 'TIMEOUT' ? 'Time Out' : ans.selected}</span></div>
+                  <div class="text-slate-600">Correct Answer: <span class="text-green-800 ml-2 bg-white/50 px-2 rounded">${ans.correct}</span></div>
+                </div>
+              ` : ''}
+              <div class="mt-4 bg-white border-[3px] border-slate-300 p-4 rounded-xl font-bold">
+                <span class="underline decoration-wavy mr-2">Explanation:</span> ${ans.exp}
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      showScreen('screen-result');
+    };
+
+    document.getElementById('btn-play-again').onclick = () => showScreen('screen-mode-select');
+
+  </script>
+</body>
+</html>
