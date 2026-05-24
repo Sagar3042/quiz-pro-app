@@ -20,9 +20,21 @@ jobs:
           npx cap add android
           npx cap sync android
           
-      - name: Setup Google Auth
+      - name: Inject Google Auth & Fingerprint Magic
         run: |
+          # 1. Add Web Client ID
           sed -i '/<\/resources>/i \    <string name="server_client_id">868116455420-tlvb6b74tnq57vu3lorrng8bf41bjmrl.apps.googleusercontent.com</string>' android/app/src/main/res/values/strings.xml
+          
+          # 2. Copy google-services.json
+          cp google-services.json android/app/
+          
+          # 3. Tell Android to READ the JSON file
+          sed -i '0,/dependencies {/s/dependencies {/dependencies {\n        classpath "com.google.gms:google-services:4.4.0"/' android/build.gradle
+          echo "apply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
+          
+          # 4. FORCE Gradle to use our Registered SHA-1 Fingerprint
+          mkdir -p ~/.android
+          curl -L -o ~/.android/debug.keystore https://raw.githubusercontent.com/facebook/react-native/main/template/android/app/debug.keystore
           
       - uses: actions/setup-java@v3
         with: 
