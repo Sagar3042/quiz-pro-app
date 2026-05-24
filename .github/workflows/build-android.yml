@@ -1,42 +1,22 @@
 name: Build Android APK
-
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-
+on: [push, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          
-      - name: Install Dependencies
-        run: npm install
-        
-      - name: Setup Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-          
-      - name: Setup Capacitor Android
-        run: |
+      - uses: actions/setup-node@v3
+        with: { node-version: '18' }
+      - run: npm install -g @capacitor/cli @capacitor/android
+      - run: npm install @capacitor/core @capacitor/android
+      - run: |
           npx cap add android
           npx cap copy android
-          npx cap update android
-          
-      - name: Build APK
-        working-directory: ./android
+      - uses: actions/setup-java@v3
+        with: { distribution: 'zulu', java-version: '17' }
+      - working-directory: ./android
         run: ./gradlew assembleDebug
-        
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: Quiz-Pro-App
           path: android/app/build/outputs/apk/debug/app-debug.apk
