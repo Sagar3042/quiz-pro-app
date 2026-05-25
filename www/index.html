@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sagar's Quiz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    html, body {
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none;
+      background-color: #fdfaf6;
+      background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+      font-family: 'Kalam', cursive, sans-serif; color: #1e293b; margin: 0; padding: 0; min-height: 100vh;
+    }
+
+    /* Clean Sketch UI */
+    .sketch-box { background-color: #ffffff; border: 3px solid #334155; border-radius: 12px 25px 15px 20px/20px 15px 25px 12px; box-shadow: 4px 4px 0px rgba(51, 65, 85, 0.1); }
+    .sketch-btn { background-color: #ffffff; border: 3px solid #334155; border-radius: 15px 225px 15px 255px/255px 15px 225px 15px; box-shadow: 2px 3px 0px rgba(51, 65, 85, 0.2); transition: all 0.1s ease; cursor: pointer; user-select: none; }
+    .sketch-btn:active:not(:disabled) { transform: translate(2px, 3px); box-shadow: 0px 0px 0px rgba(51, 65, 85, 0.2); }
+    .sketch-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .pencil-green { background: #f0fdf4 !important; border-color: #166534 !important; color: #14532d !important; }
+    .pencil-red { background: #fef2f2 !important; border-color: #991b1b !important; color: #7f1d1d !important; }
+    .pencil-blue { background: #eff6ff !important; border-color: #1e40af !important; color: #1e3a8a !important; }
+    .pencil-yellow { background: #fefce8 !important; border-color: #a16207 !important; color: #422006 !important; }
+    .pencil-purple { background: #faf5ff !important; border-color: #6b21a8 !important; color: #4c1d95 !important; }
+    
+    .hidden { display: none !important; }
+    .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background-color: #94a3b8; border-radius: 10px; }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade { animation: fadeIn 0.3s ease-out forwards; }
+  </style>
+</head>
+<body class="flex flex-col items-center p-4 md:p-8 pt-24 pb-12">
+
+  <!-- Navbar -->
+  <div id="navbar" class="hidden fixed top-0 left-0 w-full p-4 bg-[#fdfaf6] border-b-[3px] border-slate-800 flex justify-between items-center z-50">
+    <div class="flex items-center gap-3">
+      <img id="nav-avatar" src="./ok/op.jpg" class="w-10 h-10 rounded-full border-[3px] border-slate-800 object-cover bg-white pointer-events-none select-none">
+    </div>
+    <div class="flex gap-2">
+      <button id="nav-btn-community" class="sketch-btn pencil-purple px-2 md:px-3 py-2 flex items-center gap-1 font-bold"><i class="ph ph-users text-xl"></i> <span class="hidden md:inline">Global</span></button>
+      <button id="nav-btn-history" class="sketch-btn pencil-yellow px-2 md:px-3 py-2 flex items-center gap-1 font-bold"><i class="ph ph-folder-open text-xl"></i> <span class="hidden md:inline">Mine</span></button>
+      <button id="nav-btn-leaderboard" class="sketch-btn pencil-blue px-2 md:px-3 py-2 flex items-center gap-1 font-bold"><i class="ph ph-trophy text-xl text-yellow-600"></i> <span class="hidden md:inline">Rank</span></button>
+      <button id="nav-btn-logout" class="sketch-btn pencil-red px-2 md:px-3 py-2"><i class="ph ph-sign-out text-xl"></i></button>
+    </div>
+  </div>
+
+  <div id="app-container" class="w-full max-w-2xl flex flex-col items-center relative">
+    
+    <!-- Screen: Loading -->
+    <div id="screen-loading" class="flex flex-col items-center justify-center space-y-4 animate-fade w-full pt-20">
+      <i class="ph ph-spinner-gap text-6xl text-slate-800 animate-spin font-bold"></i>
+      <h2 class="text-2xl font-bold">Loading...</h2>
+    </div>
+
+    <!-- Screen: Login -->
+    <div id="screen-login" class="hidden flex-col items-center gap-6 animate-fade w-full max-w-sm pt-10">
+      <div class="sketch-box p-8 flex flex-col items-center w-full">
+        <img src="./ok/op.jpg" class="w-28 h-28 rounded-full border-4 border-slate-800 object-cover mb-4" onerror="this.src='https://api.dicebear.com/7.x/shapes/svg?seed=logo'">
+        <h1 class="text-4xl font-bold text-slate-800 mb-8">Hey Welcome!</h1>
+        <p id="login-error-msg" class="text-red-600 font-bold mb-4 hidden text-center"></p>
+        <button id="btn-google-login" class="w-full sketch-btn pencil-blue p-4 text-xl font-bold flex justify-center items-center gap-3">
+          <i class="ph ph-google-logo text-3xl"></i> Login with Google
+        </button>
+      </div>
+    </div>
+
+    <!-- Screen: Profile Setup -->
+    <div id="screen-profile" class="hidden flex-col items-center gap-6 animate-fade w-full max-w-sm pt-8">
+      <div class="sketch-box p-8 flex flex-col items-center w-full">
+        <h2 class="text-3xl font-bold mb-6">Setup Profile</h2>
+        <div class="relative mb-6">
+          <img id="profile-preview" src="https://api.dicebear.com/7.x/notionists/svg?seed=Felix" class="w-32 h-32 rounded-full border-[4px] border-slate-800 object-cover bg-white">
+          <button id="btn-select-photo" class="absolute bottom-0 right-0 sketch-btn pencil-yellow p-3 rounded-full"><i class="ph ph-camera text-xl font-bold"></i></button>
+          <input type="file" id="profile-photo-input" accept="image/*" class="hidden">
+        </div>
+        <input type="text" id="input-username" placeholder="Your Name..." class="w-full sketch-box p-4 font-bold text-lg mb-6 outline-none">
+        <p id="profile-error" class="hidden text-red-600 font-bold mb-4"></p>
+        <button id="btn-save-profile" class="w-full sketch-btn pencil-green p-4 text-xl font-bold w-full">Save & Continue</button>
+      </div>
+    </div>
+
+    <!-- Screen: Dashboard (Upload / Paste) -->
+    <div id="screen-dashboard" class="hidden flex-col gap-6 animate-fade w-full">
+      <h2 class="text-3xl font-bold text-slate-800 text-center mt-4">Hi, <span id="dashboard-username"></span>!</h2>
+      
+      <!-- Smart Input Box -->
+      <div class="sketch-box p-4 md:p-6 flex flex-col items-center w-full">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><i class="ph ph-magic-wand text-purple-600 text-3xl"></i> Create Quiz</h2>
+        <textarea id="quiz-text-input" placeholder="Paste the JSON text from Gemini here..." class="w-full h-32 sketch-box p-4 font-sans text-sm mb-4 outline-none resize-none bg-slate-50"></textarea>
+        
+        <div class="flex flex-col md:flex-row w-full gap-3">
+          <button id="btn-paste-create" class="flex-1 sketch-btn pencil-green font-bold py-3 text-lg flex items-center justify-center gap-2">
+            <i class="ph ph-check-circle text-2xl"></i> Create from Text
+          </button>
+          <div class="flex items-center justify-center font-bold text-slate-400">OR</div>
+          <button id="btn-txt-upload" class="flex-1 sketch-btn pencil-blue font-bold py-3 text-lg flex items-center justify-center gap-2">
+            <i class="ph ph-upload-simple text-2xl"></i> Upload .txt File
+          </button>
+          <input type="file" id="txt-upload-input" accept=".txt,.json" class="hidden" />
+        </div>
+      </div>
+
+      <!-- Gemini Prompt Section -->
+      <div class="sketch-box p-4 md:p-6 w-full">
+        <h3 class="text-xl font-bold mb-3 flex items-center gap-2 text-slate-800">
+          <i class="ph ph-copy text-2xl"></i> Gemini Prompt (Max Questions)
+        </h3>
+        <p class="text-slate-600 text-sm font-bold mb-3">Copy this prompt, give it an image in Gemini, and paste the result above.</p>
+        <div class="relative">
+          <div class="bg-slate-100 border-2 border-slate-300 rounded-lg p-3 pr-12 font-mono text-xs text-slate-700 h-32 overflow-y-auto custom-scroll whitespace-pre-wrap" id="prompt-text">Analyze the uploaded image with EXTREME depth and precision. Extract EVERY visible and implied piece of information from the image, including but not limited to: text, numbers, labels, headings, tables, charts, diagrams, colors, symbols, people, objects, positions, handwriting, formatting, background details, context clues, educational concepts, definitions, examples, dates, formulas, captions, and hidden/minor details.
+
+Your task is to generate the MAXIMUM possible number of HIGH-QUALITY multiple-choice questions from the image content. Aim for AT LEAST 200+ UNIQUE questions whenever possible, or the maximum logically possible without repetition.
+
+STRICT RULES:
+1. NEVER repeat the same question in any form.
+2. NEVER create duplicate or near-duplicate questions.
+3. Every question MUST test a DIFFERENT fact, concept, observation, inference, or detail from the image.
+4. Questions MUST fully cover the entire image comprehensively.
+5. Include both direct factual questions and deep conceptual/inference-based questions.
+6. Generate questions from:
+   - Main content
+   - Small details
+   - Visual structure
+   - Relationships between elements
+   - Sequence/order
+   - Definitions
+   - Examples
+   - Comparisons
+   - Logic
+   - Interpretation
+   - Contextual meaning
+7. If the image contains educational content, generate:
+   - Theory questions
+   - Conceptual questions
+   - Application-based questions
+   - Analytical questions
+   - Memory-based questions
+   - Trick questions
+8. Difficulty balancing:
+   - easy_mode = basic recall and straightforward understanding
+   - hard_mode = analytical, inferential, tricky, multi-step reasoning, detail-focused questions
+9. All options MUST be realistic and meaningful.
+10. Exactly 4 options per question.
+11. Only ONE correct answer.
+12. Explanations MUST clearly explain WHY the answer is correct.
+13. Use the SAME language as the image.
+14. Do NOT hallucinate information not visible or logically inferable from the image.
+15. Maintain strict JSON validity.
+16. Escape quotes properly.
+17. Do NOT include markdown.
+18. Do NOT include extra commentary.
+19. Output ONLY the raw JSON object.
+
+REQUIRED OUTPUT FORMAT:
+{"easy_mode":[{"question":"...","options":["A","B","C","D"],"correct_answer":"A","explanation":"..."}],"hard_mode":[{"question":"...","options":["A","B","C","D"],"correct_answer":"B","explanation":"..."}]}</div>
+          <button id="btn-copy-prompt" class="absolute top-2 right-2 sketch-btn bg-white p-2"><i class="ph ph-copy text-xl"></i></button>
+        </div>
+        <a href="https://gemini.google.com/" target="_blank" class="mt-4 block text-center sketch-btn bg-slate-100 px-4 py-2 font-bold text-blue-700">
+          Open Google Gemini <i class="ph ph-arrow-square-out"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Screen: Community Tab -->
+    <div id="screen-community" class="hidden flex-col animate-fade w-full">
+      <div class="sketch-box p-6 w-full">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl md:text-3xl font-bold flex items-center gap-2"><i class="ph ph-globe-hemisphere-west text-purple-600"></i> Global Quizzes</h2>
+          <button class="btn-close-screen sketch-btn bg-slate-100 p-2"><i class="ph ph-x text-xl font-bold"></i></button>
+        </div>
+        <div id="community-list" class="flex flex-col gap-3 max-h-[65vh] overflow-y-auto custom-scroll pr-2"></div>
+      </div>
+    </div>
+
+    <!-- Screen: History Tab -->
+    <div id="screen-history" class="hidden flex-col animate-fade w-full">
+      <div class="sketch-box p-6 w-full">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl md:text-3xl font-bold flex items-center gap-2"><i class="ph ph-folder-open text-yellow-600"></i> My Quizzes</h2>
+          <button class="btn-close-screen sketch-btn bg-slate-100 p-2"><i class="ph ph-x text-xl font-bold"></i></button>
+        </div>
+        <div id="history-list" class="flex flex-col gap-3 max-h-[65vh] overflow-y-auto custom-scroll pr-2"></div>
+      </div>
+    </div>
+
+    <!-- Screen: Leaderboard -->
+    <div id="screen-leaderboard" class="hidden flex-col animate-fade w-full">
+      <div class="sketch-box p-6 w-full">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl md:text-3xl font-bold flex items-center gap-2"><i class="ph ph-trophy text-yellow-500"></i> Leaderboard</h2>
+          <button class="btn-close-screen sketch-btn bg-slate-100 p-2"><i class="ph ph-x text-xl font-bold"></i></button>
+        </div>
+        <div id="leaderboard-list" class="flex flex-col gap-3 max-h-[60vh] overflow-y-auto custom-scroll pr-2"></div>
+      </div>
+    </div>
+
+    <!-- Screen: Mode Select -->
+    <div id="screen-mode-select" class="hidden flex-col items-center gap-6 animate-fade w-full max-w-sm pt-8">
+      <div class="sketch-box p-8 flex flex-col items-center w-full">
+        <h2 class="text-2xl font-bold mb-6 text-center text-slate-800" id="mode-quiz-title">Quiz Mode</h2>
+        <button id="btn-easy-mode" class="w-full sketch-btn pencil-green text-2xl py-4 flex justify-center items-center font-bold mb-4">Easy Mode</button>
+        <button id="btn-hard-mode" class="w-full sketch-btn pencil-red text-2xl py-4 flex justify-center items-center font-bold mb-6">Hard Mode</button>
+        <button class="btn-close-screen text-slate-500 font-bold underline decoration-wavy">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Screen: Quiz -->
+    <div id="screen-quiz" class="hidden flex-col animate-fade w-full">
+      <div class="sketch-box p-4 mb-4 flex justify-between items-center">
+        <div class="font-bold text-xl">Q. <span id="quiz-current-q">1</span>/<span id="quiz-total-q">10</span></div>
+        <div class="font-bold text-xl flex items-center gap-2"><i id="timer-icon" class="ph ph-clock text-blue-600"></i> <span id="quiz-timer">15s</span></div>
+      </div>
+      <div class="w-full border-[3px] border-slate-800 bg-white h-3 rounded-full mb-6 overflow-hidden relative">
+        <div id="timer-bar" class="absolute top-0 left-0 h-full transition-[width] duration-1000 ease-linear border-r-2 border-slate-800 pencil-blue" style="width: 100%;"></div>
+      </div>
+      <div class="sketch-box p-6 md:p-8">
+        <h2 id="quiz-question-text" class="text-xl md:text-2xl font-bold mb-6 leading-tight text-slate-800">Question?</h2>
+        <div id="options-container" class="flex flex-col gap-3"></div>
+        <div id="explanation-section" class="hidden mt-6 animate-fade">
+          <div class="pencil-purple border-[3px] border-purple-800 rounded-xl p-4">
+            <p class="text-lg font-bold"><span class="underline decoration-wavy mr-1">Explanation:</span> <span id="explanation-text"></span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen: Result -->
+    <div id="screen-result" class="hidden flex-col animate-fade w-full space-y-6">
+      <div class="sketch-box p-6 text-center">
+        <i class="ph ph-medal text-6xl text-yellow-500 mb-2"></i>
+        <h2 class="text-3xl font-bold mb-2">Score Board</h2>
+        <p id="xp-msg" class="text-lg text-green-700 font-bold mb-4">+0 XP Earned!</p>
+        <div class="text-5xl font-bold mb-6 text-slate-800"><span id="result-score">0</span> <span class="text-2xl text-slate-500">/ <span id="result-total">10</span></span></div>
+        <div class="flex gap-3">
+          <button id="btn-play-again" class="flex-1 sketch-btn pencil-blue py-3 font-bold flex justify-center items-center gap-1"><i class="ph ph-arrow-counter-clockwise"></i> Replay</button>
+          <button class="btn-close-screen flex-1 sketch-btn bg-slate-100 py-3 font-bold flex justify-center items-center gap-1"><i class="ph ph-house"></i> Home</button>
+        </div>
+      </div>
+      <div class="sketch-box p-5">
+        <h3 class="text-2xl font-bold text-center mb-4 underline decoration-wavy">Review</h3>
+        <div id="review-container" class="space-y-4"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, signInWithCredential, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, addDoc, collection, getDocs, query, where, serverTimestamp, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    // Firebase
+    const app = initializeApp({
+      apiKey: "AIzaSyBmPdi_sPjVHIkdwcCdp9etcWkFuXy0UAs",
+      authDomain: "quiz-110af.firebaseapp.com",
+      projectId: "quiz-110af",
+      storageBucket: "quiz-110af.firebasestorage.app",
+      messagingSenderId: "868116455420",
+      appId: "1:868116455420:web:a25298cb8c7d0b61af5c79"
+    });
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const IMAGEKIT_PUBLIC_KEY = "public_hGSGrmAJH4A5uBGHBS3LKieZkd4=";
+    const IMAGEKIT_PRIVATE_KEY = "private_/hp99zDJ6b8gRHbjKmT3k4ouuvs=";
+
+    let currentUser = null; let currentUserName = "User";
+    let uploadedQuizData = null; let profilePhotoFile = null;
+    let questions = [], currentQIndex = 0, score = 0, timeLeft = 15, timerInterval = null, isAnswered = false, userAnswers = [], quizStartTime = 0;
+
+    const screens = ['screen-loading', 'screen-login', 'screen-profile', 'screen-dashboard', 'screen-leaderboard', 'screen-history', 'screen-community', 'screen-mode-select', 'screen-quiz', 'screen-result'];
+    const showScreen = (id) => { screens.forEach(s => { const el = document.getElementById(s); if (el) el.classList.add('hidden'); }); document.getElementById(id).classList.remove('hidden'); };
+    document.querySelectorAll('.btn-close-screen').forEach(btn => btn.addEventListener('click', () => { document.getElementById('quiz-text-input').value = ""; showScreen('screen-dashboard'); }));
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { currentUser = null; document.getElementById('navbar').classList.add('hidden'); showScreen('screen-login'); } 
+      else {
+        currentUser = user; const snap = await getDoc(doc(db, "users", user.uid));
+        if (snap.exists()) {
+          const data = snap.data(); currentUserName = data.username;
+          document.getElementById('nav-avatar').src = data.photoUrl; document.getElementById('dashboard-username').textContent = data.username;
+          document.getElementById('navbar').classList.remove('hidden'); showScreen('screen-dashboard');
+        } else { document.getElementById('navbar').classList.add('hidden'); showScreen('screen-profile'); }
+      }
+    });
+
+    document.getElementById('btn-google-login').onclick = async () => {
+        showScreen('screen-loading');
+        try {
+            await window.Capacitor.Plugins.GoogleAuth.initialize({ clientId: '868116455420-tlvb6b74tnq57vu3lorrng8bf41bjmrl.apps.googleusercontent.com', scopes: ['profile', 'email'] });
+            const googleUser = await window.Capacitor.Plugins.GoogleAuth.signIn();
+            await signInWithCredential(auth, GoogleAuthProvider.credential(googleUser.authentication.idToken));
+        } catch (e) { document.getElementById('login-error-msg').textContent = "Login failed."; document.getElementById('login-error-msg').classList.remove('hidden'); showScreen('screen-login'); }
+    };
+    document.getElementById('nav-btn-logout').onclick = () => { if(window.Capacitor?.Plugins?.GoogleAuth) window.Capacitor.Plugins.GoogleAuth.signOut(); signOut(auth); };
+
+    // --- SMART TEXT PARSER (Paste or File) ---
+    const processQuizText = async (rawText) => {
+      let cleanText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+      try {
+        const data = JSON.parse(cleanText);
+        if (data.easy_mode && data.hard_mode) {
+          let qName = prompt("Fill Your Quiz Topic For Search Anytime in 📁 Tab:");
+          if(!qName) qName = "My Quiz " + new Date().toLocaleDateString();
+          showScreen('screen-loading');
+          
+          // Background Upload to Database
+          await addDoc(collection(db, "quizzes"), { title: qName, data: JSON.stringify(data), authorId: currentUser.uid, authorName: currentUserName, isPublic: false, timestamp: serverTimestamp() });
+          
+          uploadedQuizData = data; document.getElementById('mode-quiz-title').textContent = qName; showScreen('screen-mode-select');
+        } else { alert("Error: JSON e easy_mode ar hard_mode thakte hobe."); showScreen('screen-dashboard'); }
+      } catch(err) { alert("Parsing Error! Sothik JSON copy korechen kina check korun."); showScreen('screen-dashboard'); }
+    };
+
+    document.getElementById('btn-paste-create').onclick = () => {
+      const text = document.getElementById('quiz-text-input').value;
+      if(!text.trim()) { alert("Age box e text paste korun!"); return; }
+      processQuizText(text);
+    };
+
+    document.getElementById('btn-txt-upload').onclick = () => document.getElementById('txt-upload-input').click();
+    document.getElementById('txt-upload-input').onchange = (e) => {
+      const file = e.target.files[0]; if(!file) return; 
+      const reader = new FileReader();
+      reader.onload = (ev) => processQuizText(ev.target.result); 
+      reader.readAsText(file); e.target.value = null;
+    };
+
+    // --- COMMUNITY & HISTORY TABS ---
+    const loadQuizList = async (isCommunity) => {
+        showScreen('screen-loading'); const listEl = document.getElementById(isCommunity ? 'community-list' : 'history-list'); listEl.innerHTML = '';
+        try {
+            const qSnap = await getDocs(query(collection(db, "quizzes"), where(isCommunity ? "isPublic" : "authorId", "==", isCommunity ? true : currentUser.uid)));
+            let docsArray = []; qSnap.forEach(d => docsArray.push({id: d.id, ...d.data()}));
+            docsArray.sort((a,b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
+
+            if(docsArray.length === 0) listEl.innerHTML = `<p class='text-center font-bold text-slate-500'>${isCommunity ? 'No public quizzes yet.' : 'No saved quizzes.'}</p>`;
+            else {
+                docsArray.forEach(docData => {
+                    const card = document.createElement('div'); card.className = `w-full sketch-box p-4 flex flex-col gap-2 ${isCommunity ? 'pencil-purple' : ''}`;
+                    let innerHTML = `<div class="flex justify-between items-center"><div class="overflow-hidden pr-2"><h4 class="font-bold text-lg text-slate-800 truncate">${docData.title}</h4>`;
+                    if(isCommunity) innerHTML += `<span class="text-xs font-bold text-purple-700 bg-white/60 px-2 py-0.5 rounded">By ${docData.authorName}</span>`;
+                    innerHTML += `</div><button class="play-btn sketch-btn pencil-blue w-10 h-10 rounded-full flex items-center justify-center shrink-0"><i class="ph ph-play-circle text-2xl"></i></button></div>`;
+                    
+                    if(!isCommunity) {
+                        const style = docData.isPublic ? 'pencil-red' : 'pencil-green';
+                        const text = docData.isPublic ? '<i class="ph ph-lock-key"></i> Make Private' : '<i class="ph ph-globe"></i> Share Public';
+                        innerHTML += `<div class="border-t-2 border-dashed border-slate-300 pt-2 flex justify-between items-center mt-1"><span class="text-xs font-bold text-slate-500">${docData.isPublic ? 'Publicly Shared ✅' : 'Private 🔒'}</span><button class="toggle-btn sketch-btn ${style} px-2 py-1 font-bold text-xs flex items-center gap-1">${text}</button></div>`;
+                    }
+                    card.innerHTML = innerHTML;
+                    card.querySelector('.play-btn').onclick = () => { uploadedQuizData = JSON.parse(docData.data); document.getElementById('mode-quiz-title').textContent = docData.title; showScreen('screen-mode-select'); };
+                    
+                    if(!isCommunity) {
+                        card.querySelector('.toggle-btn').onclick = async (e) => {
+                            e.currentTarget.innerHTML = `<i class="ph ph-spinner-gap animate-spin"></i>`; e.currentTarget.disabled = true;
+                            await updateDoc(doc(db, "quizzes", docData.id), { isPublic: !docData.isPublic }); document.getElementById('nav-btn-history').click();
+                        };
+                    }
+                    listEl.appendChild(card);
+                });
+            } showScreen(isCommunity ? 'screen-community' : 'screen-history');
+        } catch(e) { showScreen('screen-dashboard'); }
+    };
+
+    document.getElementById('nav-btn-community').onclick = () => loadQuizList(true);
+    document.getElementById('nav-btn-history').onclick = () => loadQuizList(false);
+
+    document.getElementById('nav-btn-leaderboard').onclick = async () => {
+        showScreen('screen-loading'); const listEl = document.getElementById('leaderboard-list'); listEl.innerHTML = '';
+        try {
+            const qSnap = await getDocs(query(collection(db, "users"))); 
+            let users = []; qSnap.forEach(d => users.push({id: d.id, ...d.data()}));
+            users.sort((a,b) => b.xp - a.xp);
+            
+            users.slice(0, 50).forEach((data, i) => {
+                const rank = i+1; const isMe = data.id === currentUser.uid; const bg = isMe ? 'pencil-yellow border-[3px]' : 'bg-slate-50';
+                let rIcon = rank === 1 ? `<i class="ph ph-medal text-3xl text-yellow-500 w-8 text-center"></i>` : `<span class="font-bold text-slate-500 w-8 text-center">#${rank}</span>`;
+                listEl.innerHTML += `<div class="flex items-center gap-3 p-2 sketch-box mb-3 ${bg}">${rIcon}<img src="${data.photoUrl}" class="w-10 h-10 rounded-full border-2 border-slate-800 object-cover bg-white"><span class="flex-1 font-bold truncate">${data.username}</span><span class="font-bold text-blue-800 bg-blue-100 px-2 py-1 rounded-lg text-sm border border-blue-300">${data.xp} XP</span></div>`;
+            }); showScreen('screen-leaderboard');
+        } catch(e) { showScreen('screen-dashboard'); }
+    };
+
+    // --- QUIZ LOGIC ---
+    const initQuiz = (mode) => {
+      let srcQ = mode === 'easy' ? uploadedQuizData.easy_mode : uploadedQuizData.hard_mode;
+      if(!srcQ || srcQ.length === 0) { alert("Questions missing!"); return; }
+      questions = [...srcQ].sort(() => Math.random() - 0.5).map(q => { let opts = [...q.options]; if(!opts.includes(q.correct_answer)) opts[0] = q.correct_answer; return { ...q, shuffledOptions: opts.sort(() => Math.random() - 0.5) }; });
+      currentQIndex = 0; score = 0; userAnswers = []; quizStartTime = Date.now(); showScreen('screen-quiz'); loadQuestion();
+    };
+
+    document.getElementById('btn-easy-mode').onclick = () => initQuiz('easy'); document.getElementById('btn-hard-mode').onclick = () => initQuiz('hard');
+
+    const loadQuestion = () => {
+      isAnswered = false; timeLeft = 15; document.getElementById('explanation-section').classList.add('hidden');
+      const q = questions[currentQIndex]; document.getElementById('quiz-current-q').textContent = currentQIndex + 1; document.getElementById('quiz-total-q').textContent = questions.length; document.getElementById('quiz-question-text').textContent = q.question;
+      const cont = document.getElementById('options-container'); cont.innerHTML = '';
+      q.shuffledOptions.forEach(opt => {
+        const btn = document.createElement('button'); btn.className = "w-full text-left p-4 text-lg font-bold flex justify-between items-center sketch-btn"; btn.innerHTML = `<span>${opt}</span>`; btn.onclick = () => handleAnswer(opt, btn); cont.appendChild(btn);
+      }); startTimer();
+    };
+
+    const startTimer = () => {
+      clearInterval(timerInterval); updateTimerUI();
+      timerInterval = setInterval(() => { timeLeft--; updateTimerUI(); if(timeLeft <= 0) { clearInterval(timerInterval); handleAnswer('TIMEOUT', null); } }, 1000);
+    };
+
+    const updateTimerUI = () => {
+      document.getElementById('quiz-timer').textContent = `${timeLeft}s`; const bar = document.getElementById('timer-bar'); const txt = document.getElementById('quiz-timer');
+      bar.style.width = `${(timeLeft/15)*100}%`;
+      if(timeLeft <= 5) { bar.className = "absolute top-0 left-0 h-full border-r-2 border-slate-800 pencil-red"; txt.className = "text-red-600"; } 
+      else { bar.className = "absolute top-0 left-0 h-full border-r-2 border-slate-800 pencil-blue"; txt.className = "text-slate-800"; }
+    };
+
+    const handleAnswer = (selected, btnEl) => {
+      if(isAnswered) return; isAnswered = true; clearInterval(timerInterval);
+      const q = questions[currentQIndex]; const isCorrect = (selected === q.correct_answer); if(isCorrect) score++;
+      userAnswers.push({ q: q.question, selected: selected, correct: q.correct_answer, exp: q.explanation, isCorrect });
+      Array.from(document.getElementById('options-container').children).forEach(b => {
+        b.disabled = true; const text = b.querySelector('span').textContent;
+        if(text === q.correct_answer) { b.className = "w-full text-left p-4 text-lg font-bold sketch-box pencil-green border-[3px]"; b.innerHTML += '<i class="ph ph-check-circle text-green-800 text-2xl"></i>'; } 
+        else if (text === selected) { b.className = "w-full text-left p-4 text-lg font-bold sketch-box pencil-red"; b.innerHTML += '<i class="ph ph-x-circle text-red-800 text-2xl"></i>'; } 
+        else { b.className = "w-full text-left p-4 text-lg font-bold sketch-box bg-slate-100 text-slate-400 opacity-60"; }
+      });
+      if(isCorrect) { setTimeout(nextQuestion, 500); } 
+      else { document.getElementById('explanation-text').textContent = q.explanation; document.getElementById('explanation-section').classList.remove('hidden'); setTimeout(nextQuestion, 3000); }
+    };
+
+    const nextQuestion = () => { currentQIndex++; if(currentQIndex < questions.length) loadQuestion(); else showResult(); };
+
+    const showResult = async () => {
+      const xpEarned = Math.floor((Date.now() - quizStartTime) / 1000); 
+      document.getElementById('result-score').textContent = score; document.getElementById('result-total').textContent = questions.length; document.getElementById('xp-msg').textContent = `+${xpEarned} XP Earned!`;
+      try { await updateDoc(doc(db, "users", currentUser.uid), { xp: increment(xpEarned) }); } catch(e) {}
+      document.getElementById('review-container').innerHTML = userAnswers.map(ans => `
+        <div class="border-[2px] rounded-xl p-4 ${ans.isCorrect ? 'pencil-green border-green-800' : 'pencil-red border-red-800'}"><div class="flex gap-3">
+            ${ans.isCorrect ? '<i class="ph ph-check-circle text-green-800 text-2xl mt-1"></i>' : '<i class="ph ph-x-circle text-red-800 text-2xl mt-1"></i>'}
+            <div class="flex-1"><span class="font-bold text-lg">${ans.q}</span>
+              ${!ans.isCorrect ? `<div class="mt-2 font-bold text-sm"><div class="text-slate-600">You: <span class="line-through text-red-700 bg-white/50 px-1 rounded">${ans.selected}</span></div><div class="text-slate-600 mt-1">Correct: <span class="text-green-800 bg-white/50 px-1 rounded">${ans.correct}</span></div></div>` : ''}
+              <div class="mt-3 bg-white border-2 border-slate-300 p-3 rounded-lg font-bold text-sm"><span class="underline mr-1">Explanation:</span> ${ans.exp}</div>
+            </div></div></div>`).join('');
+      showScreen('screen-result');
+    };
+
+    document.getElementById('btn-copy-prompt').onclick = () => {
+      navigator.clipboard.writeText(document.getElementById('prompt-text').textContent).then(() => { const btn = document.getElementById('btn-copy-prompt'); btn.innerHTML = `<i class="ph ph-check text-green-600"></i>`; setTimeout(() => btn.innerHTML = `<i class="ph ph-copy"></i>`, 2000); });
+    };
+
+    // Profile Upload Logic untouched
+    const uploadToImageKit = async (file, fileName) => { const formData = new FormData(); formData.append("file", file); formData.append("fileName", fileName); formData.append("publicKey", IMAGEKIT_PUBLIC_KEY); const res = await fetch("https://upload.imagekit.io/api/v1/files/upload", { method: "POST", headers: { "Authorization": "Basic " + btoa(IMAGEKIT_PRIVATE_KEY + ":") }, body: formData }); const data = await res.json(); if (!res.ok) throw new Error(data.message); return data.url; };
+    document.getElementById('btn-select-photo').onclick = () => document.getElementById('profile-photo-input').click();
+    document.getElementById('profile-photo-input').onchange = (e) => { const file = e.target.files[0]; if (file) { profilePhotoFile = file; const reader = new FileReader(); reader.onloadend = () => document.getElementById('profile-preview').src = reader.result; reader.readAsDataURL(file); } };
+    document.getElementById('btn-save-profile').onclick = async () => { const name = document.getElementById('input-username').value.trim(); if(!name) return; const btn = document.getElementById('btn-save-profile'); btn.innerHTML = `Saving...`; btn.disabled = true; try { let photoUrl = document.getElementById('profile-preview').src; if (profilePhotoFile) photoUrl = await uploadToImageKit(profilePhotoFile, `profile_${currentUser.uid}`); await setDoc(doc(db, "users", currentUser.uid), { username: name, photoUrl: photoUrl, xp: 0 }); location.reload(); } catch(e) { btn.disabled = false; btn.innerHTML = "Save"; } };
+    document.getElementById('btn-play-again').onclick = () => showScreen('screen-mode-select');
+  </script>
+</body>
+</html>
